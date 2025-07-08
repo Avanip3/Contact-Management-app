@@ -1,0 +1,89 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+function App() {
+  const [contacts, setContacts] = useState([]);
+  const [form, setForm] = useState({ firstName: "", lastName: "", address: "", email: "", phone: "" });
+  const [editingId, setEditingId] = useState(null);
+
+  const fetchContacts = async () => {
+    const res = await axios.get("http://localhost:5000/contacts");
+    setContacts(res.data);
+  };
+
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (editingId) {
+      await axios.put(`http://localhost:5000/contacts/${editingId}`, form);
+    } else {
+      await axios.post("http://localhost:5000/contacts", form);
+    }
+    setForm({ firstName: "", lastName: "", address: "", email: "", phone: "" });
+    setEditingId(null);
+    fetchContacts();
+  };
+
+  const handleEdit = (contact) => {
+    setForm(contact);
+    setEditingId(contact._id);
+  };
+
+  const handleDelete = async (id) => {
+    await axios.delete(`http://localhost:5000/contacts/${id}`);
+    fetchContacts();
+  };
+
+  return (
+    <div className="p-4 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Contact Management</h1>
+      <form onSubmit={handleSubmit} className="space-y-2">
+        {Object.entries(form).map(([key, val]) => (
+          <input
+            key={key}
+            name={key}
+            value={val}
+            onChange={handleChange}
+            placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+            required
+            className="border p-2 w-full"
+          />
+        ))}
+        <button className="bg-blue-500 text-white px-4 py-2 rounded">
+          {editingId ? "Update" : "Create"}
+        </button>
+      </form>
+
+      <table className="w-full mt-6 border">
+        <thead>
+          <tr className="bg-gray-200">
+            <th>Name</th><th>Address</th><th>Email</th><th>Phone</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {contacts.map((c) => (
+            <tr key={c._id} className="text-center border-t">
+              <td>{c.firstName} {c.lastName}</td>
+              <td>{c.address}</td>
+              <td>{c.email}</td>
+              <td>{c.phone}</td>
+              <td>
+                <button onClick={() => handleEdit(c)} className="text-blue-600">Edit</button> | 
+                <button onClick={() => handleDelete(c._id)} className="text-red-600">Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default App;
